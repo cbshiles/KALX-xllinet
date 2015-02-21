@@ -8,6 +8,7 @@
 using namespace xll;
 
 typedef traits<XLOPERX>::xcstr xcstr;
+typedef traits<XLOPERX>::xchar xchar;
 typedef traits<XLOPERX>::xstring xstring;
 
 static Inet::Open io; // default
@@ -209,5 +210,39 @@ HANDLEX WINAPI xll_inet_url(xcstr url, xcstr headers, WORD flags)
 	}
 
 	return h;
+}
+
+XLL_ENUM(ICU_BROWSER_MODE,ICU_BROWSER_MODE,CATEGORY_ENUM,"Does not encode or decode characters after \"#\" or \"?\", and does not remove trailing white space after \"?\". If this value is not specified, the entire URL is encoded and trailing white space is removed.");
+XLL_ENUM(ICU_DECODE,ICU_DECODE,CATEGORY_ENUM,"Converts all %XX sequences to characters, including escape sequences, before the URL is parsed.");
+XLL_ENUM(ICU_ENCODE_PERCENT,ICU_ENCODE_PERCENT,CATEGORY_ENUM,"Encodes any percent signs encountered. By default, percent signs are not encoded. This value is available in Microsoft Internet Explorer 5 and later.");
+XLL_ENUM(ICU_ENCODE_SPACES_ONLY,ICU_ENCODE_SPACES_ONLY,CATEGORY_ENUM,"Encodes spaces only.");
+XLL_ENUM(ICU_NO_ENCODE,ICU_NO_ENCODE,CATEGORY_ENUM,"Does not convert unsafe characters to escape sequences.");
+XLL_ENUM(ICU_NO_META,ICU_NO_META,CATEGORY_ENUM,"Does not remove meta sequences (such as \".\" and \"..\") from the URL.");
+
+static AddInX xai_inet_canonicalize_url(
+	FunctionX(XLL_CSTRINGX, _T("?xll_inet_canonicalize_url"), _T("INET.CANONICALIZE.URL"))
+	.Arg(XLL_CSTRINGX, _T("Url"), _T("is the URL to canonicalize."))
+	.Arg(XLL_WORDX, _T("Flags"), _T("are optional flags from ICU_*."))
+	.Uncalced()
+	.Category(CATEGORY)
+	.FunctionHelp(_T("Return a canonicalized Url."))
+	.Documentation(_T(""))
+);
+xcstr WINAPI xll_inet_canonicalize_url(xcstr url, WORD flags)
+{
+#pragma XLLEXPORT
+	static xchar curl[1024];
+	DWORD len = 1024;
+
+	try {
+		ensure (InternetCanonicalizeUrl(url, curl, &len, flags));
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+
+		return 0;
+	}
+
+	return curl;
 }
 

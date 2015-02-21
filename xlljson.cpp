@@ -88,18 +88,20 @@ LPOPERX WINAPI xll_csv_get(HANDLEX h, xcstr fs, xcstr rs)
 
 	try {
 		if (!*fs)
-			fs = _T(",");
+			fs = _T("\"[^\"]*\"|(,)");
 		if (!*rs)
 			rs = _T("\r*\n+|\r+\n*");
 		std::basic_regex<xchar> fs_re(fs), rs_re(rs);
 
 		handle<xstring> hs(h);
-		ensure (hs->length() <= traits<XLOPERX>::strmax);
 
 		t = OPERX();
-		for (std::regex_token_iterator<std::basic_string<xchar>::const_iterator> r(hs->begin(), hs->end(), rs_re, -1), rend; r != rend; ++r) {
+		for (std::regex_token_iterator<xstring::const_iterator> r(hs->cbegin(), hs->cend(), rs_re, -1), rend; r != rend; ++r) {
 			OPERX row;
-			for(std::regex_token_iterator<std::basic_string<xchar>::const_iterator> c(r->str().begin(), r->str().end(), fs_re, -1), cend; c != cend; ++c) {
+			const xstring& crow = r->str();
+			for(std::regex_token_iterator<xstring::const_iterator> c(crow.cbegin(), crow.cend(), fs_re, -1), cend; c != cend; ++c) {
+				const xstring& cstr = c->str();
+				cstr.length();
 				OPERX v = XLL_XLF(Value, OPERX(c->str()));
 				if (v.xltype != xltypeErr)
 					row.push_back(v);
@@ -107,6 +109,8 @@ LPOPERX WINAPI xll_csv_get(HANDLEX h, xcstr fs, xcstr rs)
 					row.push_back(OPERX(c->str()));
 				}
 			}
+			row.resize(1, row.size()); // does not work if columns don't match
+			ensure (t.rows() == 0 || t.columns() == row.columns());
 			t.push_back(row);
 		}
 	}
@@ -212,7 +216,7 @@ xll_expand_open(void)
 		// Try to add just above first menu separator.
 		OPER oPos;
 		oPos = Excel<XLOPER>(xlfGetBar, OPER(7), OPER(4), OPER("-"));
-		oPos = 5;
+		oPos = 6;
 
 		OPER oAdj = Excel<XLOPER>(xlfGetBar, OPER(7), OPER(4), OPER("Expand"));
 		if (oAdj == OPER(xlerr::NA)) {
