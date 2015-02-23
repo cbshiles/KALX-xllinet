@@ -70,15 +70,13 @@ LPOPERX WINAPI xll_json_get(LPOPERX po)
 	return &o;
 }
 
-#include <regex>
-
 static AddInX xai_csv_get(
 	FunctionX(XLL_LPOPERX, _T("?xll_csv_get"), _T("CSV.GET"))
 	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a std::string object"))
-	.Arg(XLL_CSTRINGX, _T("_FS"), _T("is the optional field separator. Default is \",\""))
-	.Arg(XLL_CSTRINGX, _T("_RS"), _T("is the optional record separator. Default is \"\\n\""))
+	.Arg(XLL_CSTRINGX, _T("_FP"), _T("is the optional field separator. Default is \",\"."))
+	.Arg(XLL_CSTRINGX, _T("_RS"), _T("is the optional record separator. Default is \";|\\n\"."))
 	.Category(_T("JSON"))
-	.FunctionHelp(_T("Return a string"))
+	.FunctionHelp(_T("Parse comma separated values based on field separator and record separator."))
 	.Documentation()
 );
 LPOPERX WINAPI xll_csv_get(HANDLEX h, xcstr fs, xcstr rs)
@@ -88,31 +86,11 @@ LPOPERX WINAPI xll_csv_get(HANDLEX h, xcstr fs, xcstr rs)
 
 	try {
 		if (!*fs)
-			fs = _T("\"[^\"]*\"|(,)");
+			fs = _T(",");
 		if (!*rs)
-			rs = _T("\r*\n+|\r+\n*");
-		std::basic_regex<xchar> fs_re(fs), rs_re(rs);
+			rs = _T(";\n");
 
-		handle<xstring> hs(h);
-
-		t = OPERX();
-		for (std::regex_token_iterator<xstring::const_iterator> r(hs->cbegin(), hs->cend(), rs_re, -1), rend; r != rend; ++r) {
-			OPERX row;
-			const xstring& crow = r->str();
-			for(std::regex_token_iterator<xstring::const_iterator> c(crow.cbegin(), crow.cend(), fs_re, -1), cend; c != cend; ++c) {
-				const xstring& cstr = c->str();
-				cstr.length();
-				OPERX v = XLL_XLF(Value, OPERX(c->str()));
-				if (v.xltype != xltypeErr)
-					row.push_back(v);
-				else {
-					row.push_back(OPERX(c->str()));
-				}
-			}
-			row.resize(1, row.size()); // does not work if columns don't match
-			ensure (t.rows() == 0 || t.columns() == row.columns());
-			t.push_back(row);
-		}
+		t = csv::parse(handle<xstring>(h)->c_str(), fs, rs);
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
