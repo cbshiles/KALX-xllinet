@@ -16,12 +16,24 @@
     <ClCompile Include="xllquandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="xllfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xllcsv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xllstr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="xllinet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="xlljson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xllcsv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

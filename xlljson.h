@@ -14,55 +14,6 @@ k5 | [v6 | v7 | v8 ]  -- array is one row (what if 2 elements???)
 typedef xll::traits<XLOPERX>::xcstr xcstr;
 typedef xll::traits<XLOPERX>::xstring xstring;
 
-namespace csv {
-
-	// scan for next unquoted fs
-	inline xcstr scan(xcstr s, xcstr t, xcstr fs, xcstr q = _T("\"\'"))
-	{
-		xcstr inq = 0;
-
-		for (; s && *s && s < t; ++s) {
-			xcstr inq_ = _tcschr(q, *s);
-			
-			if (!inq)
-				inq = inq_;
-			else if (inq == inq_)
-				inq = 0; // closing quote
-
-			if (!inq && _tcschr(fs, *s)) {
-				break;
-			}
-		}
-
-		return s;
-	}
-	inline OPERX parse(xcstr s, xcstr fs = _T(","), xcstr rs = _T(";\n"))
-	{
-		OPERX o;
-
-		for (xcstr t = s, u = _tcspbrk(t, rs); u; u = _tcspbrk(t = u + 1, rs)) {
-			OPERX row;
-			// parse record [t, u)
-			for (xcstr v = t, w = scan(v, u, fs); v <= u; w = scan(v = w + 1, u, fs)) {
-				OPERX o_(v, w - v);
-
-				OPERX v_ = XLL_XLF(Value, o_); // handles numbers and dates
-				if (v_.xltype == xltypeErr)
-					v_ = XLL_XLF(Evaluate, o_); // handles booleans and errors
-
-				if (v_.xltype != xltypeErr)
-					row.push_back(v_);
-				else
-					row.push_back(o_);
-			}
-
-			o.push_back(row.resize(1, row.size()));
-		}
-
-		return o;
-	}
-}
-
 namespace json {
 
 	template<class X>
@@ -74,6 +25,7 @@ namespace json {
 		
 		return str;
 	}
+	// non throwing eat
 	template<class X>
 	inline bool peck(typename xll::traits<X>::xcstr* pstr, int c)
 	{

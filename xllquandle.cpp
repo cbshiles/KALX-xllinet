@@ -52,7 +52,7 @@ static AddInX xai_quandl_metadata(
 LPOPERX WINAPI xll_quandle_metadata(void)
 {
 #pragma XLLEXPORT
-	static OPERX md(_T("?exclude_data=true"));
+	static OPERX md(_T("&exclude_data=true"));
 
 	return &md;
 }
@@ -67,7 +67,7 @@ static AddInX xai_quandl_ascending(
 LPOPERX WINAPI xll_quandle_ascending(void)
 {
 #pragma XLLEXPORT
-	static OPERX asc(_T("?sort_order=asc"));
+	static OPERX asc(_T("&sort_order=asc"));
 
 	return &asc;
 }
@@ -83,7 +83,7 @@ static AddInX xai_quandl_rows(
 LPXLOPERX WINAPI xll_quandle_rows(WORD rows)
 {
 #pragma XLLEXPORT
-	static OPERX rows_(_T("?rows="));
+	static OPERX rows_(_T("&rows="));
 
 	return XLL_XLF(Concatenate, rows_, OPERX(rows)).XLFree();
 }
@@ -99,7 +99,7 @@ static AddInX xai_quandl_column(
 LPXLOPERX WINAPI xll_quandle_column(WORD column)
 {
 #pragma XLLEXPORT
-	static OPERX column_(_T("?column="));
+	static OPERX column_(_T("&column="));
 
 	return XLL_XLF(Concatenate, column_, OPERX(column)).XLFree();
 }
@@ -115,7 +115,7 @@ static AddInX xai_quandl_start(
 LPXLOPERX WINAPI xll_quandle_start(double start)
 {
 #pragma XLLEXPORT
-	static OPERX start_(_T("?trim_start=")), format(_T("yyyy-mm-dd"));
+	static OPERX start_(_T("&trim_start=")), format(_T("yyyy-mm-dd"));
 
 	return XLL_XLF(Concatenate, start_, XLL_XLF(Text, OPERX(start), format)).XLFree();
 }
@@ -131,7 +131,7 @@ static AddInX xai_quandl_end(
 LPXLOPERX WINAPI xll_quandle_end(double end)
 {
 #pragma XLLEXPORT
-	static OPERX end_(_T("?trim_end=")), format(_T("yyyy-mm-dd"));
+	static OPERX end_(_T("&trim_end=")), format(_T("yyyy-mm-dd"));
 
 	return XLL_XLF(Concatenate, end_, XLL_XLF(Text, OPERX(end), format)).XLFree();
 }
@@ -147,7 +147,7 @@ static AddInX xai_quandl_frequency(
 LPXLOPERX WINAPI xll_quandle_frequency(xcstr freq)
 {
 #pragma XLLEXPORT
-	static OPERX collapse(_T("?collapse="));
+	static OPERX collapse(_T("&collapse="));
 
 	OPERX f;
 
@@ -185,7 +185,7 @@ static AddInX xai_quandl_calculate(
 LPXLOPERX WINAPI xll_quandle_calculate(xcstr trans)
 {
 #pragma XLLEXPORT
-	static OPERX collapse(_T("?transformation="));
+	static OPERX collapse(_T("&transformation="));
 
 	OPERX f;
 
@@ -222,7 +222,7 @@ LPXLOPERX WINAPI xll_quandle_search(LPOPERX term)
 	static OPERX query, space(_T(" ")), plus(_T("+"));
 	
 	try {
-		query = _T("?query=");
+		query = _T("&query=");
 		for (const auto& t : query) {
 			query = XLL_XLF(Concatenate, query, plus, XLL_XLF(Substitute, t, space, plus));
 		}

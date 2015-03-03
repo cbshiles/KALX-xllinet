@@ -89,15 +89,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="xllcsv.h" />
     <ClInclude Include="xlljson.h" />
     <ClInclude Include="xllinet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\monte\adjust.cpp" />
     <ClCompile Include="..\monte\adjust12.cpp" />
+    <ClCompile Include="xllcsv.cpp" />
+    <ClCompile Include="xllfile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="xllinet.cpp" />
     <ClCompile Include="xlljson.cpp" />
     <ClCompile Include="xllquandle.cpp" />
+    <ClCompile Include="xllstr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\xll8\xll.vcxproj">
