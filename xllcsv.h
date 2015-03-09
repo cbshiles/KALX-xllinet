@@ -1,6 +1,6 @@
 // xllcsv.h - comma separated values
 #pragma once
-#define EXCEL12
+//#define EXCEL12
 #include "xll/xll.h"
 
 #define CATEGORY _T("XLL")
@@ -10,6 +10,21 @@ typedef xll::traits<XLOPERX>::xstring xstring;
 
 namespace csv {
 
+	inline void trim(xcstr* pb, xcstr* pe = 0)
+	{
+		ensure(pb && *pb);
+		while (::_istspace(**pb) && *pb < *pe)
+			++*pb;
+		if (pe && *pe)
+			while (::_istspace((*pe)[-1]) && *pb < *pe)
+				--*pe;
+	}
+	inline void unquote(xcstr *pb, xcstr *pe) {
+		if (**pb == '"' && (*pe)[-1] == '"') {
+			++*pb;
+			--*pe;
+		}
+	}
 	// scan for next unquoted fs
 	inline xcstr scan(xcstr s, xcstr t, xcstr fs, xcstr q = _T("\"\'"))
 	{
@@ -38,13 +53,7 @@ namespace csv {
 			OPERX row;
 			// parse record [t, u)
 			for (xcstr v = t, w = scan(v, u, fs); v <= u; w = scan(v = w + 1, u, fs)) {
-				OPERX o_(v, w - v);
-/*				if (o_.val.str[0] > 0 && o_.val.str[1] == '=') {
-					OPERX v_ = XLL_XLF(Evaluate, o_);
-					row.push_back(v_);
-				}
-				else
-*/					row.push_back(o_);
+				row.push_back(to_XOPER<XLOPERX>(v, w - v));
 			}
 
 			o.push_back(row.resize(1, row.size()));

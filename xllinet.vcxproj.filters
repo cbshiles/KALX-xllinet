@@ -13,9 +13,6 @@
     <ClCompile Include="xlljson.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="xllquandle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="xllfile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -23,6 +20,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="xllstr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xllquandl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

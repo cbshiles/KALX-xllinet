@@ -103,7 +103,7 @@
     </ClCompile>
     <ClCompile Include="xllinet.cpp" />
     <ClCompile Include="xlljson.cpp" />
-    <ClCompile Include="xllquandle.cpp" />
+    <ClCompile Include="xllquandl.cpp" />
     <ClCompile Include="xllstr.cpp" />
   </ItemGroup>
   <ItemGroup>

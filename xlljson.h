@@ -6,7 +6,7 @@ k2 | {k3 | v3         -- nested objects
 k5 | [v6 | v7 | v8 ]  -- array is one row (what if 2 elements???)
 */
 #pragma once
-#define EXCEL12
+//#define EXCEL12
 #include "xll/xll.h"
 
 #define CATEGORY_JSON _T("JSON")
@@ -109,7 +109,7 @@ namespace json {
 
 		*pstr = e + 1;
 
-		o = XOPER<X>(b, len<X>(b, e));
+		o = to_XOPER<X>(b, len<X>(b, e));
 
 		return o;
 	}
@@ -155,10 +155,10 @@ namespace json {
 
 		b = e = *pstr;
 		if (*b == '{') {
-			o = handle<XOPER<X>>(new XOPER<X>(parse_object<X>(&e))).get();
+			o = parse_object<X>(&e);
 		}
 		else if (*b == '[') {
-			o = handle<XOPER<X>>(new XOPER<X>(parse_array<X>(&e))).get();
+			o = parse_array<X>(&e);
 		}
 		else if (*b == '"') {
 			o = parse_string<X>(&e);
@@ -195,7 +195,7 @@ namespace json {
 		o[1] = parse_value<X>(pstr);
 
 		// handle keys start with '*'
-		if (o[1].xltype == xltypeNum && xll::handle<XOPER<X>>(o[1].val.num, false)) {
+		if (o[1].xltype == xltypeMulti) {
 			xll::traits<X>::xchar c = '*';
 			o[0] = XLL_XLF(Concatenate, XOPER<X>(&c, 1), o[0]);
 		}

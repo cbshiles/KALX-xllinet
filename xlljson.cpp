@@ -1,6 +1,12 @@
 // xlljson.cpp - JSON objects in Excel
-#define EXCEL12
-#include "xll/xll.h"
+/*
+JSON.PARSE converts a string into a 2 column recursive object.
+JSON.GET converts a handle to the object into a two column array
+Arrays and objects get replace by the lparray pointer. These
+are placed in a set as they are displayed.
+JSON.GET also converts lparray pointers to the appropriate ranges
+*/
+#include <set>
 #include "xlljson.h"
 
 using namespace xll;
@@ -9,6 +15,8 @@ typedef traits<XLOPERX>::xcstr xcstr;
 typedef traits<XLOPERX>::xchar xchar;
 typedef traits<XLOPERX>::xstring xstring;
 typedef traits<XLOPERX>::xword xword;
+
+static std::set<HANDLEX> json_subobject;
 
 static AddInX xai_json_set(
 	FunctionX(XLL_HANDLEX, _T("?xll_json_set"), _T("JSON.SET"))
@@ -33,43 +41,183 @@ HANDLEX WINAPI xll_json_set(LPOPERX po)
 	return h;
 }
 
-
-static AddInX xai_json_get(
-	FunctionX(XLL_LPOPERX, _T("?xll_json_get"), _T("JSON.GET"))
+static AddInX xai_json_parse(
+	FunctionX(XLL_HANDLEX, _T("?xll_json_parse"), _T("JSON.PARSE"))
 	.Arg(XLL_LPOPERX, _T("Handle"), _T("is a handle to a JSON object"))
 	.Uncalced()
 	.Category(_T("JSON"))
-	.FunctionHelp(_T("Return a JSON object"))
+	.FunctionHelp(_T("Return a handle to a JSON object"))
 	.Documentation()
-);
-LPOPERX WINAPI xll_json_get(LPOPERX po)
+	);
+HANDLEX WINAPI xll_json_parse(LPOPERX po)
 {
 #pragma XLLEXPORT
-	static OPERX o;
+	handlex h;
 
 	try {
+		OPERX o;
+
 		if (po->xltype == xltypeNum) {
 			handle<xstring> hs(po->val.num);
 			xcstr cs = hs->c_str();
 			o = json::parse_object<XLOPERX>(&cs);
 		}
 		else if (po->xltype == xltypeStr) {
-			xstring s(po->val.str + 1, po->val.str + 1 + po->val.str[0]);
-			xcstr cs = s.c_str();
-			o = json::parse_object<XLOPERX>(&cs);
+//			xstring s(po->val.str + 1, po->val.str + 1 + po->val.str[0]);
+//			xcstr cs = s.c_str();
+			xcstr cs = po->val.str + 1;
+			o = json::parse_object<XLOPERX>(&cs); //!!! malformed objects???
 		}
 		else {
-			XLL_WARNING("JSON.GET: argument must be a string or a handle to a string");
-			o = OPERX(xlerr::NA);
+			XLL_WARNING("JSON.PARSE: argument must be a string or a handle to a string");
+			h = 0;
+		}
+
+		if (h != 0)
+			h = handle<OPERX>(new OPERX(o)).get();
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+
+		h = 0;
+	}
+	catch (...) {
+		XLL_ERROR("JSON.GET: unknown exception");
+
+		h = 0;
+	}
+
+	return h;
+}
+
+static AddInX xai_json_get(
+	FunctionX(XLL_LPOPERX, _T("?xll_json_get"), _T("JSON.GET"))
+	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a parsed JSON object"))
+	.Category(_T("JSON"))
+	.FunctionHelp(_T("Return a JSON object"))
+	.Documentation()
+);
+LPOPERX WINAPI xll_json_get(HANDLEX h)
+{
+#pragma XLLEXPORT
+	static OPERX o;
+
+	try {
+		if (json_subobject.find(h) != json_subobject.end()) {
+			o = *h2p<XLOPERX>(h);
+		}
+		else {
+			o = *handle<OPERX>(h);
+		}
+
+		if (o.columns() == 2 && o.rows() > 1) { // 1 row objects???
+			for (xword i = 0; i < o.rows(); ++i) {
+				ensure(o(i, 0).xltype == xltypeStr);
+				if (o(i, 1).xltype == xltypeMulti) {
+					HANDLEX hx = p2h<XLOPERX>(o.val.array.lparray + 2*i + 1);
+					const OPERX& co = *h2p<XLOPERX>(hx);
+					if (co.xltype == co.xltype)
+						hx = hx;
+					o(i, 1) = hx;
+					json_subobject.insert(hx);
+				}
+			}
 		}
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
+
+		o = OPERX(xlerr::NA);
+	}
+	catch (...) {
+		XLL_ERROR("JSON.GET: unknown exception");
+
+		o = OPERX(xlerr::NA);
 	}
 
 	return &o;
 }
 
+//static const int JSON_MISMATCH = (std::numeric_limits<int>::max)();
+
+// match a with initial substring b, ignoring asterisks
+inline int json_match(const OPERX& a, const OPERX& b)
+{
+	ensure (a.xltype == xltypeStr);
+	ensure (b.xltype == xltypeStr);
+
+	xchar na = a.val.str[0];
+	xchar nb = b.val.str[0];
+
+	xcstr pa = a.val.str;
+	xcstr pb = b.val.str;
+	if (a.val.str[0] > 0 && a.val.str[1] == '*') {
+		++pa;
+		--na;
+	}
+	if (b.val.str[0] > 0 && b.val.str[1] == '*') {
+		++pb;
+		--nb;
+	}
+
+	while (na && nb && (::tolower(*++pa) == ::tolower(*++pb))) {
+		--na;
+		--nb;
+	}
+
+	return nb == 0 ? na : -nb;
+}
+
+static AddInX xai_json_value(
+	FunctionX(XLL_LPOPERX, _T("?xll_json_value"), _T("JSON.VALUE"))
+	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a range."))
+	.Arg(XLL_LPOPERX, _T("Key"), _T("is the object key to lookup."))
+	.Category(CATEGORY_JSON)
+	.FunctionHelp(_T("Return the value corresponding to Key."))
+	.Documentation(_T("If the value is an array or object and Key starts with asterisk, then the handle is returned."))
+);
+LPOPERX WINAPI xll_json_value(HANDLEX h, LPOPERX pk)
+{
+#pragma XLLEXPORT
+	static OPERX v;
+
+	try {
+		v = OPERX(xlerr::NA);
+		handle<OPERX> h_(h);
+		ensure (h_->columns() == 2);
+		const OPERX& o(*h_);
+		
+		const OPERX& k(*pk);
+		ensure (k.size() == 1);
+
+		int n_ = 0;
+		xword i_ = (xword)-1;
+		for (xword i = 0; i < o.rows(); ++i) {
+			int n = json_match(o(i, 0), k);
+			if (n == 0) {
+				i_ = i;
+
+				break;
+			}
+			if (n_ < n) {
+				i_ = i; // best match
+				n_ = n;
+			}
+		}
+		v = i_ != -1 ? o(i_,1) : OPERX(xlerr::NA);
+		if (k.val.str[0] && k.val.str[1] == '*') {
+			ensure (v.xltype == xltypeNum);
+			v = *handle<OPERX>(v.val.num);
+		}
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+
+		v = OPERX(xlerr::NA);
+	}
+
+	return &v;
+}
 
 static AddInX xai_range_expand(_T("?xll_range_expand"), _T("XLL.EXPAND"));
 int WINAPI xll_range_expand(void)
@@ -80,17 +228,29 @@ int WINAPI xll_range_expand(void)
 		OPERX co = XLL_XL_(Coerce, ac);
 		ensure (co.xltype == xltypeNum);
 		handle<OPERX> ho(co.val.num);
-		OPERX off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1), OPERX(ho->rows()), OPERX(ho->columns()));
-		XLL_XL_(Set, off, *ho);
+		OPERX off;
+		if (ho->xltype == xltypeNil) {
+			off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1));
+			XLL_XL_(Set, off, OPERX(xlerr::Null));
+		}
+		else {
+			off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1), OPERX(ho->rows()), OPERX(ho->columns()));
+			XLL_XL_(Set, off, *ho);
+		}
 		XLL_XLC(Select, off);
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
 
-		return 0;
+		return FALSE;
+	}
+	catch (...) {
+		XLL_ERROR("XLL.EXPAND: unknown exception");
+
+		return FALSE;
 	}
 
-	return 1;
+	return TRUE;
 }
 
 int
@@ -137,3 +297,87 @@ xll_expand_open(void)
 	return 1;
 }
 static Auto<Open> xao_expand(xll_expand_open);
+
+#ifdef _DEBUG
+
+void xll_test_json_match()
+{
+	int n;
+
+	n = json_match(OPERX(_T("abc")), OPERX(_T("abc")));
+	ensure (n == 0);
+
+	n = json_match(OPERX(_T("*abc")), OPERX(_T("abc")));
+	ensure (n == 0);
+
+	n = json_match(OPERX(_T("abc")), OPERX(_T("*abc")));
+	ensure (n == 0);
+
+	n = json_match(OPERX(_T("*abc")), OPERX(_T("*abc")));
+	ensure (n == 0);
+
+	n = json_match(OPERX(_T("*ab")), OPERX(_T("*abc")));
+	ensure(n == -1);
+
+	n = json_match(OPERX(_T("ab")), OPERX(_T("*abc")));
+	ensure(n == -1);
+
+	n = json_match(OPERX(_T("*ab")), OPERX(_T("abc")));
+	ensure(n == -1);
+
+	n = json_match(OPERX(_T("ab")), OPERX(_T("abc")));
+	ensure(n == -1);
+}
+void xll_test_json_value()
+{
+	OPERX o{
+		OPERX(_T("abc")), OPERX(1),
+		OPERX(_T("ab")), OPERX(2),
+		OPERX(_T("a")), OPERX(3)
+	};
+	o.resize(3, 2);
+	handle<OPERX> ho = new OPERX(o);
+
+	OPERX k, v;
+	k = _T("a");
+	v = *xll_json_value(ho.get(), &k);
+	ensure (v == 3);
+
+	k = _T("ab");
+	v = *xll_json_value(ho.get(), &k);
+	ensure (v == 2);
+
+	k = _T("abc");
+	v = *xll_json_value(ho.get(), &k);
+	ensure (v == 1);
+
+	k = _T("xyz");
+	v = *xll_json_value(ho.get(), &k);
+	ensure (v == OPERX(xlerr::NA));
+}
+void xll_test_json_parse(void)
+{
+//	xcstr text = _T("{\"help\": \"Return...\", \"success\" : true, \"result\" : {\"license_title\": \"Creative Commons Attribution\", \"maintainer\" : \"\", \"relationships_as_object\" : [], \"private\" : false}}");
+	xcstr text = _T("{\"maintainer\" : \"\"}");
+	OPERX o;
+	o = json::parse_object<XLOPERX>(&text);
+}
+
+int xll_test_json()
+{
+	try {
+		xll_test_json_match();
+		xll_test_json_value();
+		xll_test_json_parse();
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+
+		return FALSE;
+	}
+
+	return TRUE;
+}
+static Auto<OpenAfterX> xao_test_json(xll_test_json);
+
+#endif // _DEBUG

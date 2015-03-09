@@ -3,6 +3,7 @@
 
 using namespace xll;
 
+typedef traits<XLOPERX>::xchar xchar;
 typedef traits<XLOPERX>::xcstr xcstr;
 typedef traits<XLOPERX>::xstring xstring;
 
@@ -75,10 +76,40 @@ HANDLEX WINAPI xll_csv_set(LPOPERX po, xcstr fs, xcstr rs)
 
 #ifdef _DEBUG
 
+inline void test_csv_trim(xcstr s, xchar l, xchar r)
+{
+	xcstr b = s, e = s + _tcslen(s);
+	csv::trim(&b, &e);
+	ensure(b == s + l);
+	ensure(e == s + _tcslen(s) - r);
+}
+	
+void xll_test_csv_trim()
+{
+	test_csv_trim(_T(""), 0, 0);
+	test_csv_trim(_T(" "), 1, 0);
+	test_csv_trim(_T(" a"), 1, 0);
+	test_csv_trim(_T("a "), 0, 1);
+	test_csv_trim(_T(" \ta"), 2, 0);
+	test_csv_trim(_T(" a\t\r\n "), 1, 4);
+}
+
+void xll_test_csv_unquote()
+{
+	xcstr s = _T("\"hi\"");
+	xcstr bs = s, es = s + _tcslen(s);
+	csv::unquote(&bs, &es);
+	ensure(bs == s + 1);
+	ensure(es == s + _tcslen(s) - 1);
+
+}
+
 int xll_test_csv()
 {
 	try {
-//		_CrtSetBreakAlloc(2455);
+		xll_test_csv_trim();
+		xll_test_csv_unquote();
+			
 		OPERX o {
 			OPERX(xlerr::Div0)};//, OPERX(_T("abc")),
 //			OPERX(false), OPERX(xlerr::NA)
