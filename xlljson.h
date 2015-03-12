@@ -6,7 +6,7 @@ k2 | {k3 | v3         -- nested objects
 k5 | [v6 | v7 | v8 ]  -- array is one row (what if 2 elements???)
 */
 #pragma once
-//#define EXCEL12
+#define EXCEL12
 #include "xll/xll.h"
 
 #define CATEGORY_JSON _T("JSON")
@@ -48,7 +48,7 @@ namespace json {
 		return str;
 	}
 	template<class X>
-	inline bool is_equal(typename xll::traits<X>::xcstr c, int* s)
+	inline bool is_equal(typename xll::traits<X>::xcstr c, const int* s)
 	{
 		while (*c && *s && *c++ == *s++)
 			;
@@ -85,7 +85,7 @@ namespace json {
 	template<class X>
 	inline XOPER<X> parse_number(typename xll::traits<X>::xcstr* pstr)
 	{
-		ensure (isdigit(**pstr) || **pstr == '+' || **pstr == '-' || **pstr == '.');
+		ensure (::isdigit(**pstr) || **pstr == '+' || **pstr == '-' || **pstr == '.');
 
 		double d = xll::traits<X>::strtod(*pstr, pstr);
 
@@ -118,11 +118,13 @@ namespace json {
 	template<class X>
 	inline XOPER<X> parse_elements(typename xll::traits<X>::xcstr* pstr)
 	{
-		XOPER<X> o;
+		XOPER<X> o(1,1);
 
-		o = parse_value<X>(pstr);
-		while (peck<X>(pstr, ','))
-			o.push_back(parse_value<X>(pstr));
+		o[0] = parse_value<X>(pstr);
+		while (peck<X>(pstr, ',')) {
+			o.resize(1, o.size() + 1);
+			o.back() = parse_value<X>(pstr);;
+		}
 
 		return o;
 	}
@@ -165,7 +167,7 @@ namespace json {
 		}
 		else if (is_null<X>(b)) {
 			e = b + 4;
-			o = XOPER<X>(xlerr::Null);
+			o = XOPER<X>(xlerr::NA);
 		}
 		else if (is_true<X>(b)) {
 			e = b + 4;
@@ -291,7 +293,6 @@ namespace json {
 
 		return str;
 	}
-
 		
 	template<class X>
 	inline typename xll::traits<X>::xstring to_pair(const XOPER<X>& k, const XOPER<X>& v)
@@ -331,3 +332,65 @@ namespace json {
 	}
 
 } // namespace JSON
+
+#ifdef _DEBUG
+
+inline void test_json_eat(void)
+{
+	xcstr s = _T(" \t\na");
+	s = json::eat<XLOPERX>(s, _T('a'));
+	ensure (*s == 0);
+/*
+	bool fail = false;
+	try {
+		json::eat<XLOPERX>(_T(" \t\na"), _T('b'));
+	}
+	catch (const std::exception&) {
+		fail = true;
+	}
+	ensure (fail);
+*/
+}
+
+inline void test_json_peck(void)
+{
+	xcstr s = _T(" \t\na  \r\n\tb");
+	ensure (json::peck<XLOPERX>(&s, _T('a')));
+	ensure (!json::peck<XLOPERX>(&s, _T('a')));
+}
+
+inline void test_json_object(void)
+{
+	xcstr s = _T("{\"a\":[{\"b\":1.23 ,\t\"c\": null}]}");
+	OPERX o = json::parse_object<XLOPERX>(&s);
+	ensure (o.rows() == 1);
+	ensure (o.columns() == 2);
+
+	const OPERX& o1 = o[1];
+	ensure (o1.columns() == 1);
+	ensure (o1.rows() == 1);
+
+	const OPERX& o10 = o1[0];
+	ensure (o10(0,0) == _T("b"));
+	ensure (o10(0,1) == 1.23);
+	ensure (o10(1,0) == _T("c"));
+	ensure (o10(1,1) == OPERX(xlerr::NA));
+}
+
+inline int test_json(void)
+{
+	try {
+		test_json_eat();
+		test_json_peck();
+		test_json_object();
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+#endif // _DEBUG

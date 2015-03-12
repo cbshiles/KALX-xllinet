@@ -1,5 +1,4 @@
 // xllinet.cpp - WinInet wrappers
-#define EXCEL12
 #include "xllinet.h"
 #include "xll/utility/inet.h"
 

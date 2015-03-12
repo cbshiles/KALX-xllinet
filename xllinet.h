@@ -1,6 +1,6 @@
 // xllinet.h - https://quandl.com 
 #pragma once
-//#define EXCEL12
+#define EXCEL12
 #include "xll/xll.h"
 
 #define CATEGORY _T("Inet")

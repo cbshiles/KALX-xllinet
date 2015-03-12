@@ -17,6 +17,16 @@ typedef traits<XLOPERX>::xstring xstring;
 typedef traits<XLOPERX>::xword xword;
 
 static std::set<HANDLEX> json_subobject;
+// return JSON object or subobject
+const XLOPERX& json_handle(HANDLEX h)
+{
+	LPXLOPERX ph = h2p<XLOPERX>(h);
+	if (json_subobject.find(h) != json_subobject.end()) {
+		return *ph;
+	}
+
+	return *handle<OPERX>(h);	
+}
 
 static AddInX xai_json_set(
 	FunctionX(XLL_HANDLEX, _T("?xll_json_set"), _T("JSON.SET"))
@@ -63,8 +73,6 @@ HANDLEX WINAPI xll_json_parse(LPOPERX po)
 			o = json::parse_object<XLOPERX>(&cs);
 		}
 		else if (po->xltype == xltypeStr) {
-//			xstring s(po->val.str + 1, po->val.str + 1 + po->val.str[0]);
-//			xcstr cs = s.c_str();
 			xcstr cs = po->val.str + 1;
 			o = json::parse_object<XLOPERX>(&cs); //!!! malformed objects???
 		}
@@ -103,24 +111,16 @@ LPOPERX WINAPI xll_json_get(HANDLEX h)
 	static OPERX o;
 
 	try {
-		if (json_subobject.find(h) != json_subobject.end()) {
-			o = *h2p<XLOPERX>(h);
-		}
-		else {
-			o = *handle<OPERX>(h);
-		}
+		LPXLOPERX ph = h2p<XLOPERX>(h);
 
-		if (o.columns() == 2 && o.rows() > 1) { // 1 row objects???
-			for (xword i = 0; i < o.rows(); ++i) {
-				ensure(o(i, 0).xltype == xltypeStr);
-				if (o(i, 1).xltype == xltypeMulti) {
-					HANDLEX hx = p2h<XLOPERX>(o.val.array.lparray + 2*i + 1);
-					const OPERX& co = *h2p<XLOPERX>(hx);
-					if (co.xltype == co.xltype)
-						hx = hx;
-					o(i, 1) = hx;
-					json_subobject.insert(hx);
-				}
+		o = json_handle(h);
+
+		// replace multi's by handles
+		for (xword i = 0; i < o.size(); ++i) {
+			if (o[i].xltype == xltypeMulti) {
+				HANDLEX hx = p2h<XLOPERX>(ph->val.array.lparray + i);
+				o[i] = hx;
+				json_subobject.insert(hx);
 			}
 		}
 	}
@@ -183,9 +183,9 @@ LPOPERX WINAPI xll_json_value(HANDLEX h, LPOPERX pk)
 
 	try {
 		v = OPERX(xlerr::NA);
-		handle<OPERX> h_(h);
-		ensure (h_->columns() == 2);
-		const OPERX& o(*h_);
+
+		const OPERX& o = json_handle(h);
+		ensure (o.columns() == 2);
 		
 		const OPERX& k(*pk);
 		ensure (k.size() == 1);
@@ -204,11 +204,10 @@ LPOPERX WINAPI xll_json_value(HANDLEX h, LPOPERX pk)
 				n_ = n;
 			}
 		}
-		v = i_ != -1 ? o(i_,1) : OPERX(xlerr::NA);
-		if (k.val.str[0] && k.val.str[1] == '*') {
-			ensure (v.xltype == xltypeNum);
-			v = *handle<OPERX>(v.val.num);
-		}
+
+		if (i_ != (xword)-1)
+			v = o(i_,1); // don't copy!!! return address
+
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
@@ -366,6 +365,7 @@ void xll_test_json_parse(void)
 int xll_test_json()
 {
 	try {
+		test_json();
 		xll_test_json_match();
 		xll_test_json_value();
 		xll_test_json_parse();

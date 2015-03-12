@@ -1,6 +1,6 @@
 // xllcsv.h - comma separated values
 #pragma once
-//#define EXCEL12
+#define EXCEL12
 #include "xll/xll.h"
 
 #define CATEGORY _T("XLL")
