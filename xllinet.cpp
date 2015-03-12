@@ -155,8 +155,10 @@ HANDLEX WINAPI xll_inet_request_send(HANDLEX iocr, xcstr headers, xcstr optional
 #pragma XLLEXPORT
 	try {
 		handle<Inet::Open::Connection::Request> hiocr(iocr);
+		DWORD hlen = static_cast<DWORD>(_tcslen(headers));
+		DWORD olen = static_cast<DWORD>(_tcslen(optional));
 
-		HttpSendRequest(*hiocr, headers, _tcslen(headers), (LPVOID)optional, _tcslen(optional));
+		HttpSendRequest(*hiocr, headers, hlen, (LPVOID)optional, olen);
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
@@ -199,7 +201,8 @@ HANDLEX WINAPI xll_inet_url(xcstr url, xcstr headers, WORD flags)
 	handlex h;
 
 	try {
-		Inet::Open::URL iou(io, url, headers, _tcslen(headers), flags);
+		DWORD len = static_cast<DWORD>(_tcslen(headers));
+		Inet::Open::URL iou(io, url, headers, len, flags);
 		handle<xstring> hs = new xstring(traits<XLOPERX>::string(iou.Read().c_str()));
 
 		h = hs.get();

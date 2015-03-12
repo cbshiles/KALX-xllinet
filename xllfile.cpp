@@ -66,7 +66,8 @@ double WINAPI xll_file_write(xcstr file, LPOPERX po, xcstr method)
 		else
 			s = csv::to_string(*po);
 
-		WriteFile(f, &s[0], s.length()*sizeof(xchar), &n, 0);
+		DWORD len = static_cast<DWORD>(s.length()*sizeof(xchar));
+		WriteFile(f, &s[0], len, &n, 0);
 	} 
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());

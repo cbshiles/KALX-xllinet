@@ -79,7 +79,7 @@ LONG WINAPI xll_str_len(HANDLEX h)
 	try {
 		handle<xstring> hs(h);
 		
-		len = hs->length();
+		len = static_cast<LONG>(hs->length());
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
