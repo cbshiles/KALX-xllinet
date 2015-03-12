@@ -138,8 +138,6 @@ LPOPERX WINAPI xll_json_get(HANDLEX h)
 	return &o;
 }
 
-//static const int JSON_MISMATCH = (std::numeric_limits<int>::max)();
-
 // match a with initial substring b, ignoring asterisks
 inline int json_match(const OPERX& a, const OPERX& b)
 {
@@ -151,11 +149,12 @@ inline int json_match(const OPERX& a, const OPERX& b)
 
 	xcstr pa = a.val.str;
 	xcstr pb = b.val.str;
-	if (a.val.str[0] > 0 && a.val.str[1] == '*') {
+
+	if (na > 0 && pa[1] == '*') {
 		++pa;
 		--na;
 	}
-	if (b.val.str[0] > 0 && b.val.str[1] == '*') {
+	if (nb > 0 && pb[1] == '*') {
 		++pb;
 		--nb;
 	}
