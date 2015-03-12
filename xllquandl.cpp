@@ -11,12 +11,23 @@ using namespace xll;
 typedef xll::traits<XLOPERX>::xcstr xcstr;
 typedef xll::traits<XLOPERX>::xstring xstring;
 
-Reg::Object<TCHAR, std::basic_string<TCHAR>> quandl_key(HKEY_CURRENT_USER, _T("KALX\\QUANDL"), _T("Key"), _T(""));
+static std::basic_string<TCHAR> quandl_key;
 int xll_get_quandl_key(void)
 {
-	if (quandl_key == _T("")) {
-		//xlfInput
+	try {
+		Reg::Object<TCHAR, std::basic_string<TCHAR>> Quandl_key(HKEY_CURRENT_USER, _T("KALX\\QUANDL"), _T("Key"), _T(""));
+		if (Quandl_key == _T("")) {
+			OPERX key = XLL_XLF(Input, OPERX(_T("Enter your API key from http://quandl.com")), OPERX(2), OPERX(_T("Enter API Key")));
+			quandl_key = key.to_string();
+		}
+		else {
+			quandl_key = Quandl_key;
+		}
+	}
+	catch (...) {
 		quandl_key = QUANDL_KEY;
+
+		return FALSE;
 	}
 
 	return TRUE;
