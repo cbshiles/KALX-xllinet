@@ -176,9 +176,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="xllfred.cpp" />
     <ClCompile Include="xllinet.cpp" />
     <ClCompile Include="xlljson.cpp" />
     <ClCompile Include="xllquandl.cpp" />
+    <ClCompile Include="xllreg.cpp" />
     <ClCompile Include="xllstr.cpp" />
   </ItemGroup>
   <ItemGroup>

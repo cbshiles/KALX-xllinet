@@ -35,13 +35,13 @@ HANDLEX WINAPI xll_str_set(xcstr s)
 static AddInX xai_str_get(
 	FunctionX(XLL_CSTRINGX, _T("?xll_str_get"), _T("STR.GET"))
 	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a std::string object"))
-	.Arg(XLL_WORDX, _T("_Pos"), _T("is the initial position of a substring to return. Default is 0."))
-	.Arg(XLL_WORDX, _T("_Len"), _T("is an optional length of the substring to return. Default is the entire string."))
+	.Arg(XLL_LONGX, _T("_Pos"), _T("is the initial position of a substring to return. Default is 0."))
+	.Arg(XLL_LONGX, _T("_Len"), _T("is an optional length of the substring to return. Default is the entire string."))
 	.Category(_T("JSON"))
-	.FunctionHelp(_T("Return a string or substring."))
+	.FunctionHelp(_T("Return a string or substring. If Pos is negative characters are taken from the end of the string."))
 	.Documentation()
 );
-xcstr WINAPI xll_str_get(HANDLEX h, WORD pos, WORD len)
+xcstr WINAPI xll_str_get(HANDLEX h, LONG pos, LONG len)
 {
 #pragma XLLEXPORT
 	static xstring str;
@@ -50,8 +50,17 @@ xcstr WINAPI xll_str_get(HANDLEX h, WORD pos, WORD len)
 	try {
 		handle<xstring> hs(h);
 
-		if (len > 0) {
+		if (pos > 0) {
+			if (len == 0)
+				len = static_cast<LONG>(hs->length()) - pos;
 			str = hs->substr(pos, len);
+			s = str.c_str();
+		}
+		if (pos < 0) {
+			size_t pos_ = hs->length() + pos;
+			if (len == 0)
+				len = -pos;
+			str = hs->substr(pos_, len);
 			s = str.c_str();
 		}
 		else

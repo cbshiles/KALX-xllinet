@@ -78,7 +78,6 @@ HANDLEX WINAPI xll_json_parse(LPOPERX po)
 		}
 		else {
 			XLL_WARNING("JSON.PARSE: argument must be a string or a handle to a string");
-			h = 0;
 		}
 
 		if (h != 0)
@@ -86,13 +85,9 @@ HANDLEX WINAPI xll_json_parse(LPOPERX po)
 	}
 	catch (const std::exception& ex) {
 		XLL_ERROR(ex.what());
-
-		h = 0;
 	}
 	catch (...) {
 		XLL_ERROR("JSON.GET: unknown exception");
-
-		h = 0;
 	}
 
 	return h;
@@ -150,11 +145,11 @@ inline int json_match(const OPERX& a, const OPERX& b)
 	xcstr pa = a.val.str;
 	xcstr pb = b.val.str;
 
-	if (na > 0 && pa[1] == '*') {
+	if (na > 0 && (pa[1] == '{' || pa[1] == '[')) {
 		++pa;
 		--na;
 	}
-	if (nb > 0 && pb[1] == '*') {
+	if (nb > 0 && (pb[1] == '{' || pb[1] == '[')) {
 		++pb;
 		--nb;
 	}
@@ -225,15 +220,15 @@ int WINAPI xll_range_expand(void)
 		OPERX ac = XLL_XLF(ActiveCell);
 		OPERX co = XLL_XL_(Coerce, ac);
 		ensure (co.xltype == xltypeNum);
-		handle<OPERX> ho(co.val.num);
+		OPERX o = json_handle(co.val.num);
 		OPERX off;
-		if (ho->xltype == xltypeNil) {
+		if (o.xltype == xltypeNil) {
 			off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1));
 			XLL_XL_(Set, off, OPERX(xlerr::Null));
 		}
 		else {
-			off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1), OPERX(ho->rows()), OPERX(ho->columns()));
-			XLL_XL_(Set, off, *ho);
+			off = XLL_XLF(Offset, ac, OPERX(0), OPERX(1), OPERX(o.rows()), OPERX(o.columns()));
+			XLL_XL_(Set, off, o);
 		}
 		XLL_XLC(Select, off);
 	}
@@ -294,7 +289,7 @@ xll_expand_open(void)
 
 	return 1;
 }
-static Auto<Open> xao_expand(xll_expand_open);
+static Auto<Open> xao_expand_open(xll_expand_open);
 
 #ifdef _DEBUG
 
@@ -305,22 +300,22 @@ void xll_test_json_match()
 	n = json_match(OPERX(_T("abc")), OPERX(_T("abc")));
 	ensure (n == 0);
 
-	n = json_match(OPERX(_T("*abc")), OPERX(_T("abc")));
+	n = json_match(OPERX(_T("{abc")), OPERX(_T("abc")));
 	ensure (n == 0);
 
-	n = json_match(OPERX(_T("abc")), OPERX(_T("*abc")));
+	n = json_match(OPERX(_T("abc")), OPERX(_T("{abc")));
 	ensure (n == 0);
 
-	n = json_match(OPERX(_T("*abc")), OPERX(_T("*abc")));
+	n = json_match(OPERX(_T("{abc")), OPERX(_T("{abc")));
 	ensure (n == 0);
 
-	n = json_match(OPERX(_T("*ab")), OPERX(_T("*abc")));
+	n = json_match(OPERX(_T("{ab")), OPERX(_T("{abc")));
 	ensure(n == -1);
 
-	n = json_match(OPERX(_T("ab")), OPERX(_T("*abc")));
+	n = json_match(OPERX(_T("ab")), OPERX(_T("{abc")));
 	ensure(n == -1);
 
-	n = json_match(OPERX(_T("*ab")), OPERX(_T("abc")));
+	n = json_match(OPERX(_T("{ab")), OPERX(_T("abc")));
 	ensure(n == -1);
 
 	n = json_match(OPERX(_T("ab")), OPERX(_T("abc")));

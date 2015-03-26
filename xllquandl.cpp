@@ -1,9 +1,10 @@
-// xllquandl.cpp
+// xllquandl.cpp - http://quandl.com
 #define EXCEL12
 #include "xll/xll.h"
 #include "xll/utility/registry.h"
 
-#define CATEGORY _T("Inet")
+#define CATEGORY _T("Quandl")
+#define QUANDL_URL _T("https://www.quandl.com/api/v1/datasets")
 #define QUANDL_KEY _T("ZDZV_AyuBBJR6f_hNkrS")
 
 using namespace xll;
@@ -15,17 +16,15 @@ static std::basic_string<TCHAR> quandl_key;
 int xll_get_quandl_key(void)
 {
 	try {
-		Reg::Object<TCHAR, std::basic_string<TCHAR>> Quandl_key(HKEY_CURRENT_USER, _T("KALX\\QUANDL"), _T("Key"), _T(""));
-		if (Quandl_key == _T("")) {
+		Reg::Object<TCHAR, std::basic_string<TCHAR>> QuandlKey(HKEY_CURRENT_USER, _T("Software\\KALX\\Inet"), _T("QuandlKey"));
+		if (QuandlKey == _T("")) {
 			OPERX key = XLL_XLF(Input, OPERX(_T("Enter your API key from http://quandl.com")), OPERX(2), OPERX(_T("Enter API Key")));
-			quandl_key = key.to_string();
+			ensure (key.xltype == xltypeStr);
+			QuandlKey = key.string();
 		}
-		else {
-			quandl_key = Quandl_key;
-		}
+		quandl_key = QuandlKey;
 	}
 	catch (...) {
-		quandl_key = QUANDL_KEY;
 
 		return FALSE;
 	}
@@ -50,7 +49,7 @@ xcstr WINAPI xll_quandl(xcstr db, xcstr tb, xcstr qu)
 	static xstring q;
 
 	try {
-		q = _T("https://www.quandl.com/api/v1/datasets");
+		q = QUANDL_URL;
 
 		if (db && *db)
 			q.append(_T("/")).append(db);
@@ -58,8 +57,6 @@ xcstr WINAPI xll_quandl(xcstr db, xcstr tb, xcstr qu)
 			q.append(_T("/")).append(tb);
 		q.append(_T(".json?auth_token="));
 		q.append(quandl_key);
-		while (q.back() == 0)
-			q.pop_back(); // ???
 		q.append(qu);
 	}
 	catch (const std::exception& ex) {

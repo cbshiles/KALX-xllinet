@@ -185,8 +185,9 @@ XLL_ENUM(INTERNET_FLAG_PRAGMA_NOCACHE, INTERNET_FLAG_PRAGMA_NOCACHE, CATEGORY_EN
 XLL_ENUM(INTERNET_FLAG_RAW_DATA, INTERNET_FLAG_RAW_DATA, CATEGORY_ENUM, "Returns the data as a WIN32_FIND_DATA structure when retrieving FTP directory information.");
 XLL_ENUM(INTERNET_FLAG_SECURE, INTERNET_FLAG_SECURE, CATEGORY_ENUM, "Uses secure transaction semantics. This translates to using Secure Sockets Layer/Private Communications Technology (SSL/PCT) and is only meaningful in HTTP requests.");
 
+//!!! allow headers to be key-value pairs
 static AddInX xai_inet_url(
-	FunctionX(XLL_HANDLEX, _T("?xll_inet_url"), _T("INET.URL"))
+	FunctionX(XLL_HANDLEX, _T("?xll_inet_url"), _T("URL.GET"))
 	.Arg(XLL_CSTRINGX, _T("Url"), _T("is the URL to connect with."))
 	.Arg(XLL_CSTRINGX, _T("Headers"), _T("are optional headers to send with the request."))
 	.Arg(XLL_WORDX, _T("Flags"), _T("are optional flags from INTERNET_FLAG_*."))

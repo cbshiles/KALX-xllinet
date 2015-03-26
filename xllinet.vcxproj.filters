@@ -25,6 +25,12 @@
     <ClCompile Include="xllquandl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="xllfred.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xllreg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="xllinet.h">

@@ -13,8 +13,28 @@ k5 | [v6 | v7 | v8 ]  -- array is one row (what if 2 elements???)
 
 typedef xll::traits<XLOPERX>::xcstr xcstr;
 typedef xll::traits<XLOPERX>::xstring xstring;
+typedef xll::traits<XLOPERX>::xword xword;
 
 namespace json {
+
+	// two column array with first column all strings
+	template<class X>
+	inline bool is_object(const XOPER<X>& o)
+	{
+		if (o.columns() != 2)
+			return false;
+
+		for (xword i = 0; i < o.rows(); ++i)
+			if (o(i,0).xltype != xltypeStr)
+				return false;
+
+		return true;
+	}
+	template<class X>
+	inline bool is_array(const XOPER<X>& o)
+	{
+		return o.xltype == xltypeMulti && o.rows() == 1;
+	}
 
 	template<class X>
 	inline typename xll::traits<X>::xcstr eat(typename xll::traits<X>::xcstr str, int c)
@@ -196,9 +216,13 @@ namespace json {
 		*pstr = eat<X>(*pstr, ':');
 		o[1] = parse_value<X>(pstr);
 
-		// handle keys start with '*'
-		if (o[1].xltype == xltypeMulti) {
-			xll::traits<X>::xchar c = '*';
+		// handle keys start with '{'
+		if (is_object(o[1])) {
+			xll::traits<X>::xchar c = '{';
+			o[0] = XLL_XLF(Concatenate, XOPER<X>(&c, 1), o[0]);
+		}
+		else if (is_array(o[1])) {
+			xll::traits<X>::xchar c = '[';
 			o[0] = XLL_XLF(Concatenate, XOPER<X>(&c, 1), o[0]);
 		}
 
@@ -221,6 +245,11 @@ namespace json {
 	inline XOPER<X> parse_object(typename xll::traits<X>::xcstr* pstr)
 	{
 		XOPER<X> o;
+
+		if (peck<X>(pstr,'[')) {// warn???
+			--*pstr;
+			return parse_array<X>(pstr);
+		}
 
 		*pstr = eat<X>(*pstr, '{');
 
@@ -270,6 +299,11 @@ namespace json {
 				else {
 					str = xll::traits<X>::to_string(v.val.num);
 				}
+			}
+			else if (v.xltype == xltypeInt) {
+				str = xstring(1, v.val.w%10 + '0');
+				for (int i = v.val.w/10; i; i /= 10)
+					str.insert(0, 1, i%10 + '0');
 			}
 			else if (v.rows() == 1) {
 				str.append(1, '[').append(to_elements(v)).append(1, ']');
