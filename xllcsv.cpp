@@ -10,8 +10,8 @@ typedef traits<XLOPERX>::xstring xstring;
 static AddInX xai_csv_get(
 	FunctionX(XLL_LPOPERX, _T("?xll_csv_get"), _T("CSV.GET"))
 	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a std::string object"))
-	.Arg(XLL_CSTRINGX, _T("_FP"), _T("is the optional field separator. Default is \",\"."))
-	.Arg(XLL_CSTRINGX, _T("_RS"), _T("is the optional record separator. Default is \";|\\n\"."))
+	.Arg(XLL_CSTRINGX, _T("_FS"), _T("is the optional field separator list. Default is \",\"."))
+	.Arg(XLL_CSTRINGX, _T("_RS"), _T("is the optional record separator list. Default is \";|\\n\"."))
 	.Category(_T("JSON"))
 	.FunctionHelp(_T("Parse comma separated values based on field separator and record separator."))
 	.Documentation()

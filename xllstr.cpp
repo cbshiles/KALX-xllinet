@@ -123,3 +123,54 @@ HANDLEX WINAPI xll_str_append(HANDLEX h, xcstr str, WORD n)
 
 	return h;
 }
+
+static AddInX xai_str_split(
+	FunctionX(XLL_LPOPERX, _T("?xll_str_split"), _T("STR.SPLIT"))
+	.Arg(XLL_HANDLEX, _T("Handle"), _T("is a handle to a std::string object"))
+	.Arg(XLL_CSTRINGX, _T("_Delim"), _T("is an optional string of delimiters. Default is newline."))
+	.Category(_T("JSON"))
+	.FunctionHelp(_T("Split the string associated with Handle."))
+	.Documentation()
+);
+LPOPERX WINAPI xll_str_split(HANDLEX h, xcstr delim)
+{
+#pragma XLLEXPORT
+	static OPERX o;
+
+	try {
+		handle<xstring> hs(h);
+
+		static xcstr nl = _T("\n");
+		xcstr d = *delim ? delim : nl;
+
+		using st = xstring::size_type;
+		st b = hs->find_first_not_of(d);
+		while (b != xstring::npos) {
+			st e = hs->find_first_of(d, b);
+			o.push_back(hs->substr(b, e - b));
+			b = hs->find_first_not_of(d, b + e);
+		}
+
+	}
+	catch (const std::exception& ex) {
+		XLL_ERROR(ex.what());
+	}
+
+	return &o;
+}
+
+#ifdef _DEBUG
+
+XLL_TEST_BEGIN(test_str)
+
+	handle<xstring> hs = new xstring{_T("a;b;c")};
+	OPERX o = *xll_str_split(hs.get(), _T(";"));
+
+	ensure (o.size() == 3);
+	ensure (o[0] == _T("a"));
+	ensure (o[1] == _T("b"));
+	ensure (o[2] == _T("c")); // fails!!!
+
+XLL_TEST_END(test_str)
+
+#endif // _DEBUG
